@@ -12,6 +12,22 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.w2hsrgs.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+function verifyJwt(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        res.status(401).send({ message: 'Unauthorized access' })
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            res.status(403).send({ message: 'Forbidden access' });
+        }
+        req.decoded = decoded;
+        next();
+    })
+
+}
+
 async function run() {
     try {
         const serviceCollection = client.db('travelTrackDB').collection('services');
@@ -19,7 +35,8 @@ async function run() {
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
-            console.log(user);
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15d' });
+            res.send({ token })
         })
 
         app.post('/services', async (req, res) => {
@@ -54,7 +71,11 @@ async function run() {
             const result = await reviewCollection.insertOne(review);
             res.send(result);
         })
-        app.get('/reviews', async (req, res) => {
+        app.get('/reviews', verifyJwt, async (req, res) => {
+            const decoded = req.decoded;
+            if (decoded.email !== req.query.email) {
+                res.status(403).send({ message: 'Forbidden' })
+            }
             let query = {}
             if (req.query.email) {
                 query = {
@@ -73,7 +94,7 @@ async function run() {
             const reviews = await cursor.toArray();
             res.send(reviews);
         })
-        app.delete('/reviews/:id', async (req, res) => {
+        app.delete('/reviews/:id', verifyJwt, async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await reviewCollection.deleteOne(query);
