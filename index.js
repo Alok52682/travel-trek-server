@@ -15,6 +15,12 @@ async function run() {
     try {
         const serviceCollection = client.db('travelTrackDB').collection('services');
 
+        app.post('/services', async (req, res) => {
+            const service = req.body;
+            const result = await serviceCollection.insertOne(service);
+            res.send(result);
+        })
+
         app.get('/services', async (req, res) => {
             const query = {};
             const size = parseInt(req.query.size);
