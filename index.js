@@ -2,6 +2,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const app = express();
 const port = process.env.PORT || 4000;
 
@@ -15,6 +16,11 @@ async function run() {
     try {
         const serviceCollection = client.db('travelTrackDB').collection('services');
         const reviewCollection = client.db('travelTrackDB').collection('reviews');
+
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            console.log(user);
+        })
 
         app.post('/services', async (req, res) => {
             const service = req.body;
