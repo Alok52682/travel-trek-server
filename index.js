@@ -94,7 +94,19 @@ async function run() {
             const reviews = await cursor.toArray();
             res.send(reviews);
         })
-        app.delete('/reviews/:id', verifyJwt, async (req, res) => {
+        app.patch('/reviews/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const review = req.body;
+            const updateReview = {
+                $set: {
+                    reaction: review.text
+                }
+            }
+            const result = await reviewCollection.updateOne(query, updateReview);
+            res.send(result);
+        })
+        app.delete('/reviews/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await reviewCollection.deleteOne(query);
